@@ -2,7 +2,12 @@
 
 const express = require("express");
 
-const port = 3000;
+require("dotenv").config();
+
+const port = process.env.PORT;
+if (!port) {
+  throw new Error("Port must be set as environment var or in .env file");
+}
 
 const app = express();
 

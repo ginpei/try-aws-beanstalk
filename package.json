@@ -1,0 +1,30 @@
+{
+  "private": true,
+  "scripts": {
+    "lint": "tsc && eslint . && echo ✔ OK",
+    "start": "jest --watch",
+    "test": "jest"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.7",
+    "@babel/preset-env": "^7.8.7",
+    "@babel/preset-typescript": "^7.8.3",
+    "@types/express": "^4.17.7",
+    "@types/jest": "^25.2.3",
+    "@types/node": "^14.0.23",
+    "@typescript-eslint/eslint-plugin": "^2.34.0",
+    "@typescript-eslint/parser": "^2.34.0",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "jest": "^25.5.4",
+    "prettier": "^2.0.5",
+    "typescript": "^3.9.7"
+  }
+}

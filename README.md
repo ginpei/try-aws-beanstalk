@@ -314,3 +314,58 @@ events.js:292
 Error: listen EACCES: permission denied 0.0.0.0:80
 …
 ```
+
+## Elastic Beanstalk で簡単な Node.js アプリを動かす
+
+1. GitHub にプロジェクトを用意
+2. AWS Elastic Beanstalk と Pipeline を用意
+3. デプロイ
+
+### デモ用アプリを用意
+
+1. GitHub で新しいリポジトリーを作成
+   - https://github.com/new
+2. 手元で適当なプログラムを書く
+   1. Express をインストール
+   2. `main.js` にコードを書く
+   3. `npm start` で動くようにする
+   4. 実行してみる
+      - http://localhost:3000/
+
+```console
+npm install express @types/express
+```
+
+```js
+const express = require("express");
+
+const port = process.env.PORT || 3000;
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+
+app.listen(port, () => process.stdout.write(`Listening at ${port}\n`));
+```
+
+```json
+{
+  "private": true,
+  "scripts": {
+    "start": "node main.js"
+  },
+…
+```
+
+```console
+$ npm start
+Listening at 3000
+```
+
+3. GitHub へ置く
+  - `git push -u origin master`
+
+### Pipeline + Elastic Beanstalk
+
+WIP

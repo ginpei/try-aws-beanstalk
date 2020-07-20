@@ -1,9 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "lint": "tsc && eslint . && echo ✔ OK",
-    "start": "jest --watch",
-    "test": "jest"
+    "start": "node main.js"
   },
   "dependencies": {
     "aws-sdk": "^2.715.0",

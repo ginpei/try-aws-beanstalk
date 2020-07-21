@@ -1,14 +1,122 @@
 # AWSやる
 
----
----
----
+## Elastic Beanstalk でアプリ公開
 
-WIP
+- [Getting started using Elastic Beanstalk - AWS Elastic Beanstalk](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/GettingStarted.html)
 
----
----
----
+やること：
+
+1. GitHub にデモアプリ（Hello World）作成
+2. Elastic Beanstalk を用意
+3. CodePipeline を用意してデプロイ
+
+### 先にまとめ
+
+- Elastic Beanstalk で新規作成時に Node.js を選べば適宜用意してくれる
+- GitHub 等との連携は別途 CodePipeline で行う（簡単）
+- `npm run start` で実行されるので、スクリプトを用意する
+- ウェブサーバーのポートは環境変数 PORT で与えられる
+- コードのバージョン管理に S3 を利用している
+  - アプリケーション削除の際に削除できるが、念のため確認しといて
+
+### GitHub にデモアプリ（Hello World）作成
+
+何でもいいです。公式のデモでもよろしい。
+
+1. プロジェクト用のディレクトリー作成
+2. `package.json` 用意
+
+```json
+{
+  "private": true,
+  "scripts": {
+    "start": "node main.js"
+  }
+}
+```
+
+3. Express をインストール
+
+```console
+npm install express
+```
+
+4. 実装
+   - `main.js` を作ります
+   - `process.env.PORT` で listen する
+   - `PORT` の内容は後に Elastic Beanstalk の環境が用意、指定してくる
+
+```js
+const express = require("express");
+
+const port = process.env.PORT || 3000;
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send(`Hello World from ${port}!`);
+});
+
+app.listen(port, () => process.stdout.write(`Listening at ${port}\n`));
+```
+
+6. 動作確認
+7. GitHub で公開
+
+### Elastic Beanstalk を用意
+
+これが本丸だけどこの後 CodePipeline までやらないと動きません。
+
+1. コンソールを開く
+   1. https://console.aws.amazon.com/elasticbeanstalk/
+2. "Create Application"
+3. 埋める
+   1. 適当に名前を入力 e.g. try-aws-beanstalk
+   2. tags は空のままでよろしい
+   3. Platform は Node.js を選択
+      1. Platform branch, Platform version は初期値のまま
+   4. Application code は "Sample application"
+4. "Create application"
+5. 出来上がるまで待ってる間に次へ
+
+### CodePipeline を用意してデプロイ
+
+GitHub から自動でコードを引っ張ってきて Elastic Beanstalk へ渡してくれるやつです。
+
+- [Create a pipeline in CodePipeline - AWS CodePipeline](https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-create.html)
+
+1. CodePipeline コンソールを開く
+   1. http://console.aws.amazon.com/codesuite/codepipeline/
+2. "Create pipeline"
+3. Pipeline settings
+   1. 適当に名前を入力 e.g. try-aws-beanstalk
+   2. Service role は New service role のまま
+   3. Role name は自動入力されるもののまま
+      - 後で削除してやり直した際に "The service role name already exists" と言われ-ら、Service role を Existing service role にする
+   4. "Next"
+4. Source
+   1. Source provider で GitHub を選択
+      - するとなんか色々出てくる
+   2. "Connect to GitHub"
+   3. 対象の Repository と Branch を選択
+   4. "Next"
+5. Build - optional
+   1. "Skip build stage"
+6. Deploy
+   1. Deploy provider で AWS Elastic Beanstalk を選択
+   2. Region は近いものを
+   3. Application name はさっき作成した Elastic Beanstalk のもの e.g. try-aws-beanstalk
+   4. Environment name も同じく e.g. TryAwsBeanstalk-env
+7. Review
+   1. ここまでの振り返りをする（しといて）
+   2. "Create pipeline"
+8. パイプラインが起動するので、しばらく眺める
+   1. そのうち Source が Succeeded になる
+   2. やがて Deploy が Succeeded になる
+9. 確認
+   1. Elastic Beanstalk の Environment の方を開く
+   2. Health が OK になってれば OK
+   4. "TryAws-env.eba-a1b2c3d4.us-west-2.elasticbeanstalk.com" みたいなリンクが上の方にあるので探して開く
+   5. やったね！
 
 ## アプリ用アカウント作成
 
@@ -26,7 +134,6 @@ WIP
    2. グループ名入力 e.g. `my-great-app`
    3. 権限を設定（それっぽいのにしたけど、これで良いのかわからない）
       - ON: AmazonDynamoDBFullAccesswithDataPipeline
-      - ON: AmazonEC2FullAccess
       - ON: AmazonS3FullAccess
    4. Create Group で完了
 3. ユーザー作成
@@ -129,253 +236,3 @@ accessKeyId: AKIAIOSFODNN7EXAMPLE
    - ちょっと時間がかかる
 
 なんでランダムにしてるんだろ。
-
-## [DEPRECATED] EC2 でアプリ公開する
-
-### Express でアプリを作る
-
-何でも良いけど簡単な Hello World 作ります。まだ AWS 関係なし。
-
-1. パッケージの用意
-
-```console
-npm install express @types/express
-```
-
-2. サーバースクリプト作成
-   - ファイル名は `x-server.js` とします
-
-```js
-const express = require("express");
-
-const port = 3000;
-const app = express();
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
-
-app.listen(port, () => process.stdout.write(`Listening at ${port}\n`));
-```
-
-3. 実行
-   - したら URL 開く
-   - http://localhost:3000/
-
-```console
-$ node x-server.js 
-Listening at 3000
-```
-
-### EC2 でマシンを用意
-
-途中でダウンロードする `*.pem` は接続に使うのでちゃんと保存しておいてください。
-
-あと Free tier というけれど、たぶん 12 か月限定でその後は有料になる気がする。
-
-- [Tutorial: Getting started with Amazon EC2 Linux instances - Amazon Elastic Compute Cloud](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EC2_GetStarted.html)
-- [Tutorial: Setting Up Node.js on an Amazon EC2 Instance - AWS SDK for JavaScript](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-up-node-on-ec2-instance.html)
-
-1. AWS EC2 コンソールを開く
-   - https://console.aws.amazon.com/ec2/
-2. [EC2 Dashboard](https://console.aws.amazon.com/ec2/) > Launch instance
-3. "Amazon Linux 2 AMI (HVM), SSD Volume Type" を選択
-   - 左側 "Free tier only" にチェックを入れておくと安心
-   - CPU は "64-bit (x86)" のままで良い
-4. Type が "t2.micro" のものを選択
-   - 安心の "Free tier eligible" ラベルが付いているのを確認
-   - リージョンによっては "t3.micro" の場合もあるらしい
-5. セキュリティグループを確認
-   - "Security Groups" のとこ
-   - e.g. Security group name : launch-wizard-1
-6. Launch ボタンを押す
-   - "Select an existing key pair or create new key pair" ダイアログが出てくる
-7. キーペア作成
-   1. "Create a new key pair"
-   2. 適当に名前を入れる。e.g. "my-great-app-keypair"
-   3. "Download key pair"
-      - "my-great-app-keypair.pem" がダウンロードされる
-      - ちゃんと補完しておくこと
-      - 人には教えないでね
-      - 名前に "keypair" 入れるのなんかあほらしかったわ
-8. 完了を確認
-   1. Instances > Instances
-   2. Instance State が pending から running になるまで待つ
-
-### EC2 インスタンスへ接続
-
-- [Connecting to your Linux instance using SSH - Amazon Elastic Compute Cloud](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html)
-
-さっきダウンロードした `my-great-app-keypair.pem` を使います。
-
-1. AWS EC2 インスタンス一覧を開く
-   - https://console.aws.amazon.com/ec2/
-   - Instances > Instances
-2. `my-great-app-keypair.pem` ファイルの存在を確認
-   - `ls -l path/to/my-great-app-keypair.pem`
-3. 接続方法を確認
-   1. 一覧で、さっき作成したインスタンスを選択
-   2. 上部 "Connect" ボタン
-   3. 接続方法が表示されるのでそれに従う
-      - `.pem` ファイルのパーミッションを `400` とかにしとかないと接続失敗する
-4. 接続
-
-```console
-$ ssh -i ~/.ssh/my-great-app-kaypair.pem ec2-user@ec2-00-00-00-00.us.compute.amazonaws.com
-```
-
-### インスタンスを落とす
-
-落とさないとお金がかかります。
-
-あと生成時はインスタンスだけでなく必要なものもまとめてウィザードが生成してくれるんだけど、削除はばらばら手動で頑張る必要があります。頑張れ。
-
-実際は落とした後に作り直すか、まだ落とさないでください。
-
-- [Tutorial: Getting started with Amazon EC2 Linux instances - Amazon Elastic Compute Cloud](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EC2_GetStarted.html)
-
-
-1. インスタンスを削除
-   1. AWS EC2 インスタンス一覧を開く
-      - https://console.aws.amazon.com/ec2/
-      - Instances > Instances
-   2. 削除
-      1. 一覧でインスタンスを選択
-      2. Actions > Instance State > Terminate
-2. セキュリティグループを削除
-   1. AWS EC2 インスタンス一覧を開く
-      - https://console.aws.amazon.com/ec2/
-      - Network & Security > Security Groups
-   2. 削除
-      1. 一覧でセキュリティグループを選択
-      2. Actions > Delete security group
-         - ネットワークから利用されてるから削除できない、とか言われる場合は待つ
-         - インスタンスと一緒に消える
-         - Network & Security > Network Interfaces で確認できる
-3. VPC を削除？
-   - 元々あったっけ？
-   - https://console.aws.amazon.com/vpc/
-   - VIRTUAL PRIVATE CLOUD > Your VPCs
-4. 他？？
-
-### ウェブ用のポートを開ける
-
-Security Group を設定しないと、
-
-1. Security Group を設定する
-   1.  Security Groups
-     - https://console.aws.amazon.com/ec2/
-     - Network & Security > Security Groups
-     - セキュリティグループを選択（たぶん Security group name が launch-wizard-1）
-   2. 画面下部 > Inbound rules > Edit inbound rules
-   3. Add rule から Type = HTTP, HTTPS を追加
-      - 既存の SSH を上書きしないこと
-   4. いずれも Source を My IP に
-   5. Save rules
-3. Linux (iptables) を設定する
-   1. AWS EC2 インスタンスへ接続
-      - 前述
-   2. 
-
-### Node.js を動かす
-
-- [Tutorial: Setting Up Node.js on an Amazon EC2 Instance - AWS SDK for JavaScript](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-up-node-on-ec2-instance.html)
-
-1. AWS EC2 インスタンスへ接続
-   - 前述
-2. nvm をインストール
-
-```console
-$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
-$ . ~/.nvm/nvm.sh
-$ nvm install --lts
-```
-
-3. インストールを確認
-
-```console
-$ node --version
-```
-
-### 適当なサーバープログラムを動かす
-
-Hello World しましょう。
-
-1. AWS EC2 インスタンスを用意
-   - 前述
-2. AWS EC2 インスタンスへ接続
-   - 前述
-3. アプリ用ディレクトリーを用意
-5. Express をインストール
-
-```console
-$ echo '{"private":true}' > package.json
-$ npm install express
-```
-
-#### Security Groups の設定をしてないと
-
-```
-$ node server.js
-events.js:292
-      throw er; // Unhandled 'error' event
-      ^
-
-Error: listen EACCES: permission denied 0.0.0.0:80
-…
-```
-
-## Elastic Beanstalk で簡単な Node.js アプリを動かす
-
-1. GitHub にプロジェクトを用意
-2. AWS Elastic Beanstalk と Pipeline を用意
-3. デプロイ
-
-### デモ用アプリを用意
-
-1. GitHub で新しいリポジトリーを作成
-   - https://github.com/new
-2. 手元で適当なプログラムを書く
-   1. Express をインストール
-   2. `main.js` にコードを書く
-   3. `npm start` で動くようにする
-   4. 実行してみる
-      - http://localhost:3000/
-
-```console
-npm install express @types/express
-```
-
-```js
-const express = require("express");
-
-const port = process.env.PORT || 3000;
-const app = express();
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
-
-app.listen(port, () => process.stdout.write(`Listening at ${port}\n`));
-```
-
-```json
-{
-  "private": true,
-  "scripts": {
-    "start": "node main.js"
-  },
-…
-```
-
-```console
-$ npm start
-Listening at 3000
-```
-
-3. GitHub へ置く
-  - `git push -u origin master`
-
-### Pipeline + Elastic Beanstalk
-
-WIP
